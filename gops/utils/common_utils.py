@@ -65,6 +65,7 @@ def get_apprfunc_dict(key: str, **kwargs):
     var["std_type"] = kwargs.get(key + "_std_type", "mlp_shared")
     var["norm_matrix"] = kwargs.get("norm_matrix", None)
     var["pre_horizon"] = kwargs.get("pre_horizon", None)
+    var["additional_info"] = kwargs.get("additional_info", None)
 
     apprfunc_type = kwargs[key + "_func_type"]
     if key + "_output_activation" not in kwargs.keys():
@@ -91,6 +92,15 @@ def get_apprfunc_dict(key: str, **kwargs):
         var["add_bias"] = kwargs[key + "_add_bias"]
     elif apprfunc_type == "GAUSS":
         var["num_kernel"] = kwargs[key + "_num_kernel"]
+    elif apprfunc_type == "Attention":
+        var["hidden_sizes"] = kwargs[key + "_hidden_sizes"]
+        var["hidden_activation"] = kwargs[key + "_hidden_activation"]
+        var["output_activation"] = kwargs[key + "_output_activation"]
+        var["attn_in_per_dim"] = kwargs["attn_in_per_dim"]     
+        var["attn_out_dim"] = kwargs["attn_out_dim"]
+        var["attn_begin"] = kwargs["attn_begin"]
+        var["attn_end"] = kwargs["attn_end"]
+        var["attn_freeze"] = kwargs["attn_freeze"]
     elif apprfunc_type == "LipsNet":
         var["hidden_sizes"] = kwargs[key + "_hidden_sizes"]
         var["hidden_activation"] = kwargs[key + "_hidden_activation"]
@@ -104,6 +114,32 @@ def get_apprfunc_dict(key: str, **kwargs):
         var["local_lips"] = kwargs[key + "_local_lips"]
         var["squash_action"] = kwargs[key + "_squash_action"]
         var["learning_rate"] = kwargs[key + "_learning_rate"]
+    elif apprfunc_type == "PINet":
+        if key == "pi_net":
+            var["pi_begin"] = kwargs["pi_begin"]
+            var["pi_end"] = kwargs["pi_end"]
+            var["enable_mask"] = kwargs["enable_mask"]
+            var["obj_dim"] = kwargs["obj_dim"]
+            var["pi_out_dim"] = kwargs["pi_out_dim"]
+            var["encoding_others"] = kwargs["encoding_others"]
+            var["enable_self_attention"] = kwargs["enable_self_attention"]
+            var["attn_dim"] = kwargs.get("attn_dim", None)
+            if var["encoding_others"]:
+                var["others_out_dim"] = kwargs["others_out_dim"]
+                var["others_hidden_sizes"] = kwargs["others_hidden_sizes"]
+                var["others_hidden_activation"] = kwargs["others_hidden_activation"]
+                var["others_output_activation"] = kwargs["others_output_activation"]
+            var["pi_hidden_sizes"] = kwargs["pi_hidden_sizes"]
+            var["pi_hidden_activation"] = kwargs["pi_hidden_activation"]
+            var["pi_output_activation"] = kwargs["pi_output_activation"]
+        else:
+            var["pi_net"] = kwargs["pi_net"]
+            var["target_PI"] = kwargs["target_PI"]
+            var["freeze_pi_net"] = kwargs["freeze_pi_net"]
+            assert var["freeze_pi_net"] in ["actor", "critic", "none"]
+            var["hidden_sizes"] = kwargs[key + "_hidden_sizes"]
+            var["hidden_activation"] = kwargs[key + "_hidden_activation"]
+            var["output_activation"] = kwargs[key + "_output_activation"]
     else:
         raise NotImplementedError
 
@@ -119,7 +155,7 @@ def get_apprfunc_dict(key: str, **kwargs):
         if kwargs["action_type"] == "continu":
             if kwargs["policy_func_name"] == "StochaPolicy":  # todo: add TanhGauss
                 var["action_distribution_cls"] = GaussDistribution
-            elif kwargs["policy_func_name"] == "DetermPolicy" or "FiniteHorizonPolicy":
+            elif kwargs["policy_func_name"] == "DetermPolicy" or "FiniteHorizonPolicy" or "AttentionPolicy" or "AttentionFullPolicy":
                 var["action_distribution_cls"] = DiracDistribution
         else:
             if kwargs["policy_func_name"] == "StochaPolicyDis":
@@ -238,7 +274,7 @@ def set_seed(trainer_name, seed, offset, env=None):
 
 
 class FreezeParameters:
-    def __init__(self, modules):
+    def __init__(self, modules, freeze=True):
         """
         Context manager to locally freeze gradients.
         In some cases with can speed up computation because gradients aren't calculated for these listed modules.
@@ -250,15 +286,18 @@ class FreezeParameters:
         :param modules: iterable of modules. used to call .parameters() to freeze gradients.
         """
         self.modules = modules
+        self.freeze = freeze
         self.param_states = [p.requires_grad for p in get_parameters(self.modules)]
 
     def __enter__(self):
-        for param in get_parameters(self.modules):
-            param.requires_grad = False
+        if self.freeze:
+            for param in get_parameters(self.modules):
+                param.requires_grad = False
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        for i, param in enumerate(get_parameters(self.modules)):
-            param.requires_grad = self.param_states[i]
+        if self.freeze:
+            for i, param in enumerate(get_parameters(self.modules)):
+                param.requires_grad = self.param_states[i]
 
 
 def get_parameters(modules):
@@ -293,7 +332,7 @@ def get_args_from_json(json_file_path, args_dict):
     import json
 
     summary_filename = json_file_path
-    with open(summary_filename, encoding="utf-8") as f:
+    with open(summary_filename) as f:
         summary_dict = json.load(fp=f)
 
     for key in summary_dict.keys():

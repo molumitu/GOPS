@@ -50,7 +50,6 @@ gops/.idea/*
 *.pyc
 
 # C extensions
-*.so
 *.pkl
 
 figures/

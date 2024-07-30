@@ -29,7 +29,7 @@ def init_args(env, **args):
     num_threads_main = args.get("num_threads_main", None)
     if num_threads_main is None:
         if "serial" in args["trainer"]:
-            num_threads_main = 4
+            num_threads_main = 1
         else:
             num_threads_main = 1
     torch.set_num_threads(num_threads_main)
@@ -88,7 +88,7 @@ def init_args(env, **args):
     if hasattr(env, "constraint_dim"):
         args["constraint_dim"] = env.constraint_dim
 
-    if hasattr(args, "value_func_type") and args["value_func_type"] == "CNN_SHARED":
+    if "value_func_type" in args.keys() and args["value_func_type"] == "CNN_SHARED":
         if hasattr(args, "policy_func_type"):
             assert (
                 args["value_func_type"] == args["policy_func_type"]
@@ -102,6 +102,17 @@ def init_args(env, **args):
         args["conv_type"] = args["value_conv_type"]
     else:
         args["cnn_shared"] = False
+
+    if "value_func_type" in args.keys() and args["value_func_type"] == "PINet":
+        if "policy_func_type" in args.keys():
+            assert (
+                args["value_func_type"] == args["policy_func_type"]
+            ), "The function type of both value and policy should be PINet"
+        args["PI_shared"] = True
+        args["pi_net_func_name"] = "PINet"
+        args["pi_net_func_type"] = "PINet"
+    else:
+        args["PI_shared"] = False
 
     # Create save arguments
     if args["save_folder"] is None:
@@ -123,10 +134,10 @@ def init_args(env, **args):
     print("Set global seed to {}".format(args["seed"]))
     with open(args["save_folder"] + "/config.json", "w", encoding="utf-8") as f:
         json.dump(change_type(copy.deepcopy(args)), f, ensure_ascii=False, indent=4)
-    if hasattr(env, "additional_info"):
-        args["additional_info"] = env.additional_info
-    else:
-        args["additional_info"] = {}
+
+    args["additional_info"] = env.additional_info
+    for key, value in args["additional_info"].items():
+        args[key+"_dim"] = value["shape"]
 
     # Start a new local Ray instance
     # This is necessary since all training scripts use evaluator, which uses ray.

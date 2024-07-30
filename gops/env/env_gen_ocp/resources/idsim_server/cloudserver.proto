@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package cloundserver;
+
+import "google/protobuf/empty.proto";
+
+
+service IdSimService {
+  rpc InitIdSim(InitIdSimRequest) returns (InitIdSimResponse);
+  rpc ResetIdSim(ResetIdSimRequest) returns (ResetIdSimResponse);
+  rpc GetMultilaneIdsimcontext(GetMultilaneIdsimcontextRequest) returns (GetMultilaneIdsimcontextResponse);
+  rpc GetCrossroadIdsimcontext(GetCrossroadIdsimcontextRequest) returns (GetCrossroadIdsimcontextResponse);
+  rpc GetModelFreeRewardDetails(GetModelFreeRewardDetailsRequest) returns (GetModelFreeRewardDetailsResponse);
+  rpc StepIdsim(StepIdsimRequest) returns (StepIdsimResponse);
+  rpc Close(CloseRequest) returns (google.protobuf.Empty);
+}
+
+message InitIdSimRequest {
+  bytes message = 1;
+}
+
+message InitIdSimResponse {
+  int32 handle = 1;
+  string idsim_id = 2;
+}
+
+message ResetIdSimRequest {
+  string idsim_id = 1;
+}
+
+message ResetIdSimResponse {
+  bytes message = 1;
+}
+
+message GetMultilaneIdsimcontextRequest {
+    bytes message = 1;
+    string idsim_id = 2;
+}
+
+message GetMultilaneIdsimcontextResponse {
+    bytes message = 1;
+}
+
+message GetCrossroadIdsimcontextRequest {
+    bytes message = 1;
+    string idsim_id = 2;
+}
+
+message GetCrossroadIdsimcontextResponse {
+    bytes message = 1;
+}
+
+message GetModelFreeRewardDetailsRequest {
+    bytes message = 1;
+    string idsim_id = 2;
+}
+
+message GetModelFreeRewardDetailsResponse {
+    bytes message = 1;
+}
+
+message StepIdsimRequest {
+    bytes message = 1;
+    string idsim_id = 2;
+}
+
+message StepIdsimResponse {
+    bytes message = 1;
+}
+
+message CloseRequest {
+  string idsim_id = 1;
+}

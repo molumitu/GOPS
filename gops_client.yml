@@ -1,0 +1,39 @@
+name: gops_client
+
+channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud/conda-forge
+  - defaults
+
+dependencies:
+  - python=3.9
+  - pytorch>=1.13.0=cuda*
+  - numpy>1.16.0
+  - pandas
+  - tensorboard>=2.5.0
+  - matplotlib
+  - seaborn
+  - scipy
+  - cyipopt
+  - llvm-openmp<16
+  - grpcio 
+  - grpcio-tools 
+  - protobuf
+  - shapely>=2
+  - omegaconf 
+  - typing_extensions 
+  - cython>=3 
+  - libbezier 
+  - pip
+  - pip:
+    - ray[default]
+    - gym==0.23.1
+    - gymnasium
+    - box2d
+    - pygame
+    - pyglet
+    - slxpy
+    - openpyxl
+    - intel-openmp
+    - pytest
+    - onnx
+    - onnxruntime

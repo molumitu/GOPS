@@ -47,6 +47,7 @@ class BaseSampler(metaclass=ABCMeta):
         self.env = create_env(**kwargs)
         _, self.env = set_seed(kwargs["trainer"], kwargs["seed"], index + 200, self.env)  #? seed here?
         self.networks = create_approx_contrainer(**kwargs)
+        self.networks.eval()
         self.noise_params = noise_params
         self.sample_batch_size = sample_batch_size
         if isinstance(self.env, VectorEnv):
@@ -106,16 +107,18 @@ class BaseSampler(metaclass=ABCMeta):
             )
         else:
             batch_obs = torch.from_numpy(self.obs.astype("float32"))
+        batch_obs = batch_obs.to(self.networks.device_str)
+
         logits = self.networks.policy(batch_obs)
         action_distribution = self.networks.create_action_distributions(logits)
         action, logp = action_distribution.sample()
 
         if self._is_vector:
-            action = action.detach().numpy()
-            logp = logp.detach().numpy()
+            action = action.detach().cpu().numpy()
+            logp = logp.detach().cpu().numpy()
         else:
-            action = action.detach()[0].numpy()
-            logp = logp.detach()[0].numpy()
+            action = action.detach()[0].cpu().numpy()
+            logp = logp.detach()[0].cpu().numpy()
 
         if self.noise_params is not None:
             action = self.noise_processor.sample(action)

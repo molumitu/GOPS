@@ -41,7 +41,9 @@ def register(
 
 # regist evaluator
 from gops.trainer.evaluator import Evaluator
+from gops.trainer.idsim_train_evaluator import IdsimTrainEvaluator
 register(evaluator_name="evaluator", entry_point=Evaluator)
+register(evaluator_name="idsim_train_evaluator", entry_point=IdsimTrainEvaluator)
 
 
 def create_evaluator(evaluator_name: str, **kwargs) -> object:
@@ -57,5 +59,7 @@ def create_evaluator(evaluator_name: str, **kwargs) -> object:
         evaluator_creator = spec_.entry_point
     else:
         raise RuntimeError(f"{spec_.evaluator_name} registered but entry_point is not specified")
-
-    return ray.remote(num_cpus=1)(evaluator_creator).remote(**_kwargs)
+    if kwargs["use_gpu"]:
+        return ray.remote(num_cpus=1)(evaluator_creator).remote(**_kwargs)
+    else:
+        return ray.remote(num_cpus=1)(evaluator_creator).remote(**_kwargs)

@@ -27,7 +27,13 @@ class Evaluator:
 
         _, self.env = set_seed(kwargs["trainer"], kwargs["seed"], index + 400, self.env)
 
+        kwargs["device"] = 'cpu'
         self.networks = create_approx_contrainer(**kwargs)
+        # self.use_gpu = kwargs["use_gpu"]
+        # if self.use_gpu:
+        #     self.networks.cuda()
+        self.networks.get_parameter_number()
+        self.device = 'cpu'
         self.render = kwargs["is_render"]
 
         self.num_eval_episode = kwargs["num_eval_episode"]
@@ -41,6 +47,8 @@ class Evaluator:
 
     def load_state_dict(self, state_dict):
         self.networks.load_state_dict(state_dict)
+        self.networks = self.networks.to('cpu')
+        print('eval', next(self.networks.policy.parameters()).device)
 
     def run_an_episode(self, iteration, render=True):
         if self.print_iteration != iteration:
@@ -56,7 +64,7 @@ class Evaluator:
         info["TimeLimit.truncated"] = False
         while not (done or info["TimeLimit.truncated"]):
             batch_obs = torch.from_numpy(np.expand_dims(obs, axis=0).astype("float32"))
-            logits = self.networks.policy(batch_obs)
+            logits = self.networks.policy(batch_obs.to(self.device))
             action_distribution = self.networks.create_action_distributions(logits)
             action = action_distribution.mode()
             action = action.detach().numpy()[0]
