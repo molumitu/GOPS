@@ -2,10 +2,10 @@ import torch
 from typing import List
 
 from gops.env.env_gen_ocp.resources.idsim_model.model_context import Parameter, State
-from gops.env.env_gen_ocp.resources.idsim_model.crossroad.context import CrossRoadContext
+from gops.env.env_gen_ocp.resources.idsim_model.multilane.context import MultiLaneContext
 
 
-def stack_samples(samples: List[CrossRoadContext]) -> CrossRoadContext:
+def stack_samples(samples: List[MultiLaneContext]) -> MultiLaneContext:
     ego_state = torch.stack([s.x.ego_state for s in samples])
     last_action = torch.stack([s.x.last_action for s in samples])
     last_last_action = torch.stack([s.x.last_last_action for s in samples])
@@ -16,7 +16,7 @@ def stack_samples(samples: List[CrossRoadContext]) -> CrossRoadContext:
     boundary_param = torch.stack([s.p.boundary_param for s in samples]) 
     t = torch.tensor([s.t for s in samples])  # [B, ]
 
-    return CrossRoadContext(
+    return MultiLaneContext(
         x=State(ego_state, last_last_action, last_action),
         p=Parameter(ref_param=ref_param, sur_param=sur_param,
                     light_param=light_param, ref_index_param=ref_index_param,
@@ -27,7 +27,7 @@ def stack_samples(samples: List[CrossRoadContext]) -> CrossRoadContext:
     )
 
 
-def stack_samples_full_horizon(samples: List[CrossRoadContext]) -> CrossRoadContext:
+def stack_samples_full_horizon(samples: List[MultiLaneContext]) -> MultiLaneContext:
     ego_state = torch.stack([s.x.ego_state for s in samples], dim=1)
     last_action = torch.stack([s.x.last_action for s in samples], dim=1)
     last_last_action = torch.stack(
@@ -39,7 +39,7 @@ def stack_samples_full_horizon(samples: List[CrossRoadContext]) -> CrossRoadCont
         [s.p.ref_index_param for s in samples], dim=1)
     boundary_param = torch.stack([s.p.boundary_param for s in samples], dim=1)  # [B, 2]
     t = torch.stack([s.t for s in samples], dim=1)
-    return CrossRoadContext(
+    return MultiLaneContext(
         x=State(ego_state, last_last_action, last_action),
         p=Parameter(ref_param=ref_param, sur_param=sur_param,
                     light_param=light_param, ref_index_param=ref_index_param,
@@ -50,8 +50,8 @@ def stack_samples_full_horizon(samples: List[CrossRoadContext]) -> CrossRoadCont
     )
 
 
-def select_sample(context: CrossRoadContext, index: int) -> CrossRoadContext:
-    return CrossRoadContext(
+def select_sample(context: MultiLaneContext, index: int) -> MultiLaneContext:
+    return MultiLaneContext(
         x=State(
             ego_state=context.x.ego_state[:, index],
             last_last_action=context.x.last_last_action[:, index],
